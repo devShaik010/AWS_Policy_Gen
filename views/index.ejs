@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Policy Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <link href="/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        🌓
+    </button>
+
+    <button class="developer-toggle" id="developerToggle">
+        Developer Info
+    </button>
+
+    <div class="developer-info" id="developerInfo">
+        <h3>Developer Information</h3>
+        <p>Created by: SHAIK ABRAR</p>
+        <p class="dev-description">Enthusiastic about the realms of AI and data science, I am a committed student with a strong foundation in Python, Java, and Django.</p>
+        <p>Currently working on: CodeVertex</p>
+        <p>Learning: Web + DevOps</p>
+        <p>Location: Hyderabad, India</p>
+        <p>Technologies Used:</p>
+        <ul class="tech-list">
+            <li>Node.js</li>
+            <li>Express</li>
+            <li>Google Gemini Pro AI</li>
+            <li>AWS Policy Generation</li>
+        </ul>
+        <div class="contact-links">
+            <a href="https://github.com/devShaik010" target="_blank">GitHub</a> |
+            <a href="mailto:shaikabrar.manuu@gmail.com">Email</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <h1>AWS Policy Generator</h1>
+            <p>Generate AWS policies from natural language descriptions</p>
+        </header>
+        
+        <main class="card">
+            <form id="policyForm">
+                <div class="form-group">
+                    <label for="service">AWS Service</label>
+                    <select id="service" name="service" class="form-control">
+                        <option value="IAM">IAM</option>
+                        <option value="S3">S3</option>
+                        <option value="EC2">EC2</option>
+                        <option value="Lambda">Lambda</option>
+                        <option value="DynamoDB">DynamoDB</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="prompt">Describe your policy requirements</label>
+                    <textarea 
+                        id="prompt" 
+                        name="prompt" 
+                        class="form-control"
+                        placeholder="Example: Allow read-only access to S3 bucket named 'my-bucket'"
+                    ></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Generate Policy
+                </button>
+            </form>
+
+            <div class="loading" id="loading">
+                Generating policy...
+            </div>
+
+            <div class="result" id="result">
+                <h2>Generated Policy</h2>
+                <pre class="code-output" id="policyOutput" contenteditable="false"></pre>
+                <div class="button-group">
+                    <button class="edit-btn" id="editButton">
+                        Edit Policy
+                    </button>
+                    <button class="copy-btn" id="copyButton">
+                        Copy to Clipboard
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const form = document.getElementById('policyForm');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const policyOutput = document.getElementById('policyOutput');
+        const copyButton = document.getElementById('copyButton');
+        const editButton = document.getElementById('editButton');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const service = document.getElementById('service').value;
+            const prompt = document.getElementById('prompt').value;
+            
+            loading.classList.add('show');
+            result.classList.remove('show');
+            
+            try {
+                const response = await fetch('/generate-policy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ service, prompt }),
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    policyOutput.textContent = JSON.stringify(data.policy, null, 2);
+                    result.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to generate policy');
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(policyOutput.textContent);
+            const originalText = copyButton.textContent;
+            copyButton.textContent = 'Copied!';
+            setTimeout(() => {
+                copyButton.textContent = originalText;
+            }, 2000);
+        });
+
+        editButton.addEventListener('click', () => {
+            const isEditing = policyOutput.contentEditable === 'true';
+            policyOutput.contentEditable = !isEditing;
+            editButton.textContent = isEditing ? 'Edit Policy' : 'Save Policy';
+            editButton.classList.toggle('editing');
+            
+            if (isEditing) {
+                try {
+                    const content = policyOutput.textContent;
+                    const formatted = JSON.stringify(JSON.parse(content), null, 2);
+                    policyOutput.textContent = formatted;
+                } catch (error) {
+                    alert('Invalid JSON format. Please check your edits.');
+                }
+            } else {
+                policyOutput.focus();
+            }
+        });
+
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const developerToggle = document.getElementById('developerToggle');
+        const developerInfo = document.getElementById('developerInfo');
+
+        // Check for saved theme preference, default to dark if none saved
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        themeToggle.textContent = savedTheme === 'dark' ? '🌞' : '🌓'; // Update toggle icon
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌞' : '🌓'; // Update toggle icon
+        });
+
+        // Developer info toggle
+        developerToggle.addEventListener('click', () => {
+            developerInfo.classList.toggle('show');
+        });
+
+        // Close developer info when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!developerInfo.contains(e.target) && e.target !== developerToggle) {
+                developerInfo.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html> 
